@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv" // for loading .env files
-	"go.uber.org/zap"         // for structured logging
+	"go.uber.org/zap"          // for structured logging
 	"go.uber.org/zap/zapcore"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -153,7 +153,7 @@ func initLogger() {
 	// Get log file path and level from environment; use defaults if not set.
 	logPath := os.Getenv("LOG_PATH")
 	if logPath == "" {
-		logPath = "./shortener.log"
+		logPath = "./shortner.log"
 	}
 	logLevelStr := os.Getenv("LOG_LEVEL")
 	var logLevel zapcore.Level

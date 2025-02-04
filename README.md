@@ -1,9 +1,13 @@
 # theGeekist/Shortner  
 
-Shortner is a super simple, self-hosted URL shortener written in Go that works seamlessly with Nginx. It’s designed for internal use cases where email links get excessively long and messy. This tool provides a clean, lightweight solution for quickly shortening URLs, making them easier to manage and share.  
+Shortner is a lightweight, self-hosted `URL shortener` written in Go, designed to work seamlessly with Nginx. It’s perfect for internal use cases where email links become excessively long and messy.  
+
+Whether you're automating workflows with **n8n**, sending clean URLs via **Telegram bots**, or simply need a **privacy-friendly alternative to third-party services**, Shortner provides a streamlined, self-hosted solution.  
 
 💡 **Read more about the use case in our blog post:**  
 👉 [Gmail Inbox Becoming Unmanageable? Here's One Fix With n8n and Telegram](https://geekist.co/gmail-inbox-becoming-unmanageable-heres-one-fix-with-n8n-and-telegram)  
+
+---
 
 ## Features  
 
@@ -20,11 +24,11 @@ Shortner is a super simple, self-hosted URL shortener written in Go that works s
 
 ---
 
-## Installation & Setup  
+## Usage  
 
-### Environment Configuration  
+### **1. Configure the Environment**  
 
-Copy the example config file and update values as needed:  
+Copy the example `.env` file and update values as needed:  
 
 ```bash
 cp .env.example .env
@@ -36,13 +40,98 @@ Example `.env` file:
 LOG_PATH=app.log
 LOG_LEVEL=debug
 CACHE_EXPIRY=30  # days
-SHORT_DOMAIN=https://my.short.link # should be configured on Nginx
+SHORT_DOMAIN=https://my.short.link  # Should be configured on Nginx
 PORT=8889
 ```  
 
+### **2. Running as a Systemd Service**  
+
+To run Shortner as a **background service on Ubuntu**, create a systemd unit file at:  
+📄 `/etc/systemd/system/shortner.service`  
+
+```ini
+[Unit]
+Description=Shortner Service
+After=network.target
+
+[Service]
+ExecStart=/path/to/shortner
+WorkingDirectory=/path/to
+Restart=always
+User=ubuntu
+EnvironmentFile=/path/to/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```  
+
+Then reload systemd and start the service:  
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable shortner
+sudo systemctl start shortner
+```  
+
+Check service status:  
+
+```bash
+sudo systemctl status shortner
+```  
+
+### **3. Shorten a URL**  
+
+Send a **GET request** to `/shorten` with the `url` parameter:  
+
+```bash
+curl "http://localhost:8889/shorten?url=https://example.com/long-url?utm_source=spam&utm_campaign=clutter"
+```  
+
+Example response:  
+
+```plaintext
+https://my.short.link/a1b2c3
+```  
+
+This returns a **shortened version** of the URL using the `SHORT_DOMAIN` environment variable.  
+Tracking parameters such as `utm_source` and `utm_campaign` are automatically removed.  
+
+### **4. Redirect to the Original URL**  
+
+Accessing the shortened URL redirects you to the original destination:  
+
+```bash
+curl -L "https://my.short.link/a1b2c3"
+```  
+
+If the short code exists, it responds with an **HTTP 302 Found** status and redirects to the cleaned URL.  
+
+### **5. Running Behind Nginx**  
+
+To proxy requests through **Nginx**, add the following configuration:  
+
+```nginx
+server {
+    listen 80;
+    server_name my.short.link;
+
+    location / {
+        proxy_pass http://localhost:8889;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```  
+
+This allows users to access `https://my.short.link/xyz123` without needing to expose the Go service directly.  
+
 ---
 
-### Installing Go (Ubuntu)  
+## Build Instructions  
+
+### **Installing Go (Ubuntu)**  
 
 Ensure your system has **Go 1.18+** installed:  
 
@@ -69,108 +158,24 @@ go version
 
 ---
 
-## Usage  
-
-Shortner provides a simple HTTP API to shorten URLs and retrieve them later.  
-
-### 1. Shorten a URL  
-
-Send a GET request to `/shorten` with the `url` parameter:  
-
-```bash
-curl "http://localhost:8889/shorten?url=https://example.com/long-url?utm_source=spam&utm_campaign=clutter"
-```  
-
-Example response:  
-
-```plaintext
-https://my.short.link/a1b2c3
-```  
-
-This returns a **shortened version** of the URL using the `SHORT_DOMAIN` environment variable. Tracking parameters such as `utm_source` and `utm_campaign` are automatically removed.  
-
-### 2. Redirect to the Original URL  
-
-Accessing the shortened URL redirects you to the original destination:  
-
-```bash
-curl -L "https://my.short.link/a1b2c3"
-```  
-
-If the short code exists, it responds with an HTTP **302 Found** status and redirects to the cleaned URL.  
-
-### 3. Automatic Cleanup  
-
-Links older than `CACHE_EXPIRY` days (default **30 days**) are automatically deleted in the background.  
-
-### 4. Running Behind Nginx  
-
-To proxy requests through Nginx, add a configuration like this:  
-
-```nginx
-server {
-    listen 80;
-    server_name my.short.link;
-
-    location / {
-        proxy_pass http://localhost:8889;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```  
-
-This allows users to access `https://my.short.link/xyz123` without needing to expose the Go service directly.
-
----
-
-## Running as a Systemd Service  
-
-To run Shortner as a background service on Ubuntu, create a systemd unit file at `/etc/systemd/system/shortener.service`:  
-
-```ini
-[Unit]
-Description=Shortner Service
-After=network.target
-
-[Service]
-ExecStart=/path/to/shortener
-WorkingDirectory=/path/to
-Restart=always
-User=ubuntu
-EnvironmentFile=/path/to/.env
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-```  
-
-Reload systemd and start the service:  
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable shortener
-sudo systemctl start shortener
-```  
-
-Check its status:  
-
-```bash
-sudo systemctl status shortener
-```  
-
----
-
 ## Contributions  
 
 Contributions are welcome! If you'd like to add features, fix bugs, or improve documentation, feel free to submit a pull request.  
 
-1. Fork the repository.  
-2. Create a feature branch: `git checkout -b my-new-feature`.  
-3. Commit your changes: `git commit -am 'Add some feature'`.  
-4. Push to the branch: `git push origin my-new-feature`.  
-5. Open a pull request.  
+1. **Fork the repository.**  
+2. **Create a feature branch:**  
+   ```bash
+   git checkout -b my-new-feature
+   ```
+3. **Commit your changes:**  
+   ```bash
+   git commit -am 'Add some feature'
+   ```
+4. **Push to the branch:**  
+   ```bash
+   git push origin my-new-feature
+   ```
+5. **Open a pull request.**  
 
 For major changes, please open an issue first to discuss your proposal.  
 
