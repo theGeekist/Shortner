@@ -1,0 +1,41 @@
+version: 2
+project_name: shortner
+
+release:
+  github:
+    owner: theGeekist
+    name: Shortner
+
+builds:
+  - id: shortner
+    main: ./main.go
+    binary: shortner
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    tool: go  # Updated from "gobinary"
+
+archives:
+  - formats:  # Updated from "format"
+      - tar.gz
+      - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+changelog:
+  sort: desc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+
+snapshot:
+  version_template: "{{ .Version }}-dev"  # Updated from "name_template"
